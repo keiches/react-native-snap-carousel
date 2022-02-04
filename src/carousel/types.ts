@@ -47,6 +47,7 @@ type CarouselBaseProps<TData> = {
   onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void;
   onScrollIndexChanged?: (index: number) => void;
   onSnapToItem?: (index: number) => void;
+  onReposition?: (index: number) => void;
 };
 
 type InheritedPropsFromFlatlist<TData> = Pick<

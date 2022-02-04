@@ -75,6 +75,7 @@ export class Carousel<TData> extends React.Component<
   _mounted: boolean;
   _positions: { start: number; end: number }[];
   _currentScrollOffset: number;
+  _lastScrollOffset: number;
   _scrollEnabled: boolean;
 
   _initTimeout?: ReturnType<typeof setTimeout>;
@@ -118,6 +119,7 @@ export class Carousel<TData> extends React.Component<
       this._mounted = false;
       this._positions = [];
       this._currentScrollOffset = 0; // Store ScrollView's scroll position
+      this._lastScrollOffset = 0; // Store ScrollView's last scroll position to compare with _currentScrollOffset to see if there was actual move
       this._scrollEnabled = props.scrollEnabled !== false;
 
       this._getCellRendererComponent = this._getCellRendererComponent.bind(this);
@@ -956,7 +958,7 @@ export class Carousel<TData> extends React.Component<
       // WARNING: everything in this condition will probably need to be called on _snapToItem as well because:
       // 1. `onMomentumScrollEnd` won't be called if the scroll isn't animated
       // 2. `onMomentumScrollEnd` won't be called at all on Android when scrolling programmatically
-      if (nextActiveItem !== this._activeItem) {
+      if (nextActiveItem !== this._activeItem && this._currentScrollOffset !== this._lastScrollOffset) {
           this._activeItem = nextActiveItem;
           onSnapToItem && onSnapToItem(this._getDataIndex(nextActiveItem));
 
@@ -998,7 +1000,7 @@ export class Carousel<TData> extends React.Component<
       fireCallback = true,
       forceScrollTo = false
   ) {
-      const { onSnapToItem } = this.props;
+      const { onSnapToItem, onReposition } = this.props;
       const itemsLength = this._getCustomDataLength();
       const wrappedRef = this._getWrappedRef();
 
@@ -1024,13 +1026,17 @@ export class Carousel<TData> extends React.Component<
 
       this._scrollTo({ offset, animated });
 
+      this._activeItem = index;
+      this._lastScrollOffset = offset;
+      this._currentScrollOffset = offset;
+
       // On both platforms, `onMomentumScrollEnd` won't be triggered if the scroll isn't animated
       // so we need to trigger the callback manually
       // On Android `onMomentumScrollEnd` won't be triggered when scrolling programmatically
       // Therefore everything critical needs to be manually called here as well, even though the timing might be off
       const requiresManualTrigger = !animated || IS_ANDROID;
       if (requiresManualTrigger) {
-          this._activeItem = index;
+          // this._activeItem = index;
 
           if (fireCallback) {
               onSnapToItem && onSnapToItem(this._getDataIndex(index));
@@ -1039,11 +1045,15 @@ export class Carousel<TData> extends React.Component<
           // Repositioning on Android
           if (IS_ANDROID && this._shouldRepositionScroll(index)) {
               if (animated) {
+                  // @ts-expect-error setTimeout / clearTiemout is buggy :/
+                  clearTimeout(this._androidRepositioningTimeout);
                   this._androidRepositioningTimeout = setTimeout(() => {
+                      onReposition && onReposition(index);
                       // Without scroll animation, the behavior is completely buggy...
                       this._repositionScroll(index, true);
                   }, 400); // Approximate scroll duration on Android
               } else {
+                  onReposition && onReposition(index);
                   this._repositionScroll(index);
               }
           }
@@ -1177,7 +1187,7 @@ export class Carousel<TData> extends React.Component<
       );
   }
 
-  _getComponentOverridableProps () {
+  _getComponentOverridableProps (): any {
       const { hideCarousel } = this.state;
       const { loopClonesPerSide } = this.props;
       const visibleItems =
@@ -1218,7 +1228,7 @@ export class Carousel<TData> extends React.Component<
       };
   }
 
-  _getComponentStaticProps () {
+  _getComponentStaticProps (): any {
       const { hideCarousel } = this.state;
       const {
           activeSlideAlignment,
@@ -1332,7 +1342,6 @@ export class Carousel<TData> extends React.Component<
               })}
           </ScrollViewComponent>
       ) : (
-          // @ts-expect-error Seems complicated to make TS 100% happy, while sharing that many things between
           // flatlist && scrollview implementation. I'll prob try to rewrite parts of the logic to overcome that.
           <Animated.FlatList {...props} />
       );
