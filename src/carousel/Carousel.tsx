@@ -77,6 +77,7 @@ export class Carousel<TData> extends React.Component<
   _currentScrollOffset: number;
   _lastScrollOffset: number;
   _scrollEnabled: boolean;
+  _repositionTo: number;
 
   _initTimeout?: ReturnType<typeof setTimeout>;
   _apparitionTimeout?: ReturnType<typeof setTimeout>;
@@ -121,6 +122,7 @@ export class Carousel<TData> extends React.Component<
       this._currentScrollOffset = 0; // Store ScrollView's scroll position
       this._lastScrollOffset = 0; // Store ScrollView's last scroll position to compare with _currentScrollOffset to see if there was actual move
       this._scrollEnabled = props.scrollEnabled !== false;
+      this._repositionTo = -1;
 
       this._getCellRendererComponent = this._getCellRendererComponent.bind(this);
       this._getItemLayout = this._getItemLayout.bind(this);
@@ -847,6 +849,8 @@ export class Carousel<TData> extends React.Component<
           repositionTo = index + dataLength;
       }
 
+      this._repositionTo = repositionTo;
+
       this._snapToItem(repositionTo, animated, false);
   }
 
@@ -1024,7 +1028,7 @@ export class Carousel<TData> extends React.Component<
           return;
       }
 
-      this._scrollTo({ offset, animated });
+      this._scrollTo({ offset, animated: this._repositionTo > -1 ? false : animated });
 
       this._activeItem = index;
       this._lastScrollOffset = offset;
@@ -1102,6 +1106,8 @@ export class Carousel<TData> extends React.Component<
 
       const positionIndex = this._getPositionIndex(index);
 
+      this._repositionTo = -1;
+
       if (positionIndex === this._activeItem) {
           return;
       }
@@ -1116,6 +1122,7 @@ export class Carousel<TData> extends React.Component<
       if (newIndex > itemsLength - 1) {
           newIndex = 0;
       }
+      this._repositionTo = -1;
       this._snapToItem(newIndex, animated, fireCallback);
   }
 
@@ -1126,6 +1133,7 @@ export class Carousel<TData> extends React.Component<
       if (newIndex < 0) {
           newIndex = itemsLength - 1;
       }
+      this._repositionTo = -1;
       this._snapToItem(newIndex, animated, fireCallback);
   }
 
