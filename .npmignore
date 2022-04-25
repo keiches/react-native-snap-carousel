@@ -1,8 +1,9 @@
-example
-node_modules
-doc
+/example/
+/node_modules/
+/doc/
 ISSUE_TEMPLATE.md
 package-lock.json
 yarn.lock
-.vscode
 .eslintrc
+/.vscode/
+/.idea/
