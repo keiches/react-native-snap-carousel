@@ -12,7 +12,7 @@
         "url": "github.com/meliorence/react-native-snap-carousel"
     },
     "scripts": {
-        "prepare": "bob build",
+        "build": "bob build",
         "lint": "eslint \"**/*.{js,ts,tsx}\""
     },
     "keywords": [
